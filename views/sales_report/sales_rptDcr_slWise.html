@@ -1,0 +1,239 @@
+{{extend 'layout_salesreport.html'}}
+<style>
+  #sm_search_date_from_dt,#sm_search_date_to_dt{
+    height:30px;
+    padding: 0px 5px;
+  }
+  #btn_filter,#btn_all{
+    
+  }
+  .tbl tr:nth-child(even) {background-color: #d6d8db;}
+  .tbl_head tr:nth-child(even) {background-color: #d6d8db;}
+</style>
+<div class="table-responsive-sm"></div>
+  <table class="table tbl_head  bg-light " > 
+
+    <tr class="table-secondary">
+      
+      <td ><!-- Order SL: --> &nbsp;{{#=rowid}}</td>
+      <td ><!-- Date: &nbsp;{{#=visit_date}} --></td>
+    </tr>
+    <tr class="table-success">
+      <!-- <td >Territory: &nbsp;{{=route_id}}</td> -->
+      <td >Order SL: &nbsp;{{=rowid}}</td>
+
+      <td >Doctor: &nbsp;{{=doc_id}}</td>
+    </tr>
+  </table>
+
+  {{
+
+    for i in range(len(records_ov)):
+      records_ov_dict=records_ov[i]  
+      rowid=str(records_ov_dict["rowid"]) 
+      
+      
+      giftList = []
+      sampleList = []
+      ppmList = []
+      singleList=[]
+      
+      detaildata=str(records_ov_dict["giftnsample"])      
+     # =detaildata
+      if detaildata != '' :              
+        dataList = detaildata.split('rdsep')            
+        
+        for i in range(len(dataList)):
+            single_rec= dataList[i] 
+             
+              #===Gift====                
+              try:
+                if ( (single_rec.index('Gift'))!= -1 ) : 
+
+                singleList = single_rec.split('Gift')                                                                            
+                if singleList != '':                      
+                  for k in range(len(singleList)):                            
+                      gftIdQty = str(singleList[k]).strip()
+                      gftIdList = gftIdQty.split(',') 
+                      
+                      if len(gftIdList) == 3 :
+                          gftID = gftIdList[0]                                
+                          gftQty = gftIdList[1]
+                          
+                          gftDict = {'gftID':gftID,'gftQty':gftQty}
+                          giftList.append(gftDict)
+                      pass
+                  pass
+                pass                     
+            
+              pass
+            except:
+                  pass
+            
+            #======Sample=====
+                try:
+                  if ( (single_rec.index('Sample'))!= -1 ) : 
+                  single_sampleList = single_rec.split('Sample')                                                                            
+                    if single_sampleList != '':                      
+                      for k in range(len(single_sampleList)):                            
+                          smpIdQty = str(single_sampleList[k]).strip()
+                          smpIdList = smpIdQty.split(',') 
+                          
+                          if len(smpIdList) == 3 :
+                              smpID = smpIdList[0]                                
+                              smpQty = smpIdList[1]
+                              
+                              smpDict = {'smpID':smpID,'smpQty':smpQty}
+                              sampleList.append(smpDict)
+                          pass
+                      pass
+                    pass                     
+                
+                  pass
+                except:
+                    pass
+                     
+          #==========PPM======
+           try:
+              if ( (single_rec.index('PPM'))!= -1 ) : 
+
+              single_ppmList = single_rec.split('PPM')                                                                            
+              if single_ppmList != '':                      
+                for k in range(len(single_ppmList)):                            
+                    ppmIdQty = str(single_ppmList[k]).strip()
+                    ppmIdList = ppmIdQty.split(',') 
+                    
+                    if len(ppmIdList) == 3 :
+                        ppmID = ppmIdList[0]                                
+                        ppmQty = ppmIdList[1]
+                        
+                        ppmDict = {'ppmID':ppmID,'ppmQty':ppmQty}
+                        ppmList.append(ppmDict)
+                    pass
+                pass
+              pass                     
+                  
+            pass
+          except:
+              pass
+
+
+        pass                 
+      
+
+      pass
+    pass
+
+   
+
+ 
+}}
+ 
+ 
+  {{if len(giftList)>0:}}
+  <table class="table table-striped table-hover border-primary table-bordered tbl " > 
+    <thead class="table-dark">
+      <th>Gift</th>
+      <th>ID</th>
+      <th>Qty</th>
+    </thead>
+    <tbody>
+     
+
+      {{for i in sorted(range(len(giftList))):}}
+        {{gftData=giftList[i]}} 
+            
+        <tr class="table-primary">          
+          <td class="text-center">
+
+          {{
+            g_id=gftData['gftID']
+            giftRow = db( (db.sm_doctor_gift.gift_id == g_id)).select(db.sm_doctor_gift.gift_name)  
+            gftName=''
+              if giftRow:
+                  gftName=giftRow[0].gift_name
+              pass
+              =gftName
+          }}
+        </td>
+        
+        <td class="text-center">{{=gftData['gftID']}}</td>
+        <td class="text-center">{{=gftData['gftQty']}}</td>
+      </tr>
+      {{pass}}
+      <tr>
+      
+
+  </table>
+
+  {{pass}}
+
+
+  
+{{if len(sampleList)>0:}}
+
+    <table class="table table-striped table-hover border-primary table-bordered tbl " > 
+      <thead class="table-dark">
+        <th>Sample </th>
+        <th>ID</th>
+        <th>Qty</th>
+      </thead>
+      {{for i in sorted(range(len(sampleList))):}}
+        {{smpData=sampleList[i]}} 
+        <tr class="table-primary">
+          <td class="text-center">{{
+            s_id=smpData['smpID']
+            
+            smpRow = db( (db.sm_doctor_sample.item_id == s_id)).select(db.sm_doctor_sample.name)  
+            smpName=''
+              if smpRow:
+                  smpName=smpRow[0].name
+              pass
+              =smpName
+          }}</td>
+          <td class="text-center">{{=smpData['smpID']}}</td>
+          <td class="text-center">{{=smpData['smpQty']}}</td>
+          
+        </tr>
+      {{pass}}
+    </table>
+  {{pass}}
+  
+
+
+  {{if len(ppmList)>0:}}
+
+    <table class="table table-striped table-hover border-primary table-bordered tbl " > 
+      <thead class="table-dark">
+        <th>PPM </th>
+        <th>ID</th>
+        <th>Qty</th>
+      </thead>
+      <tbody>
+        {{for i in sorted(range(len(ppmList))):}}
+          {{ppmData=ppmList[i]}}  
+          <tr class="table-primary">
+            <td class="text-center" >{{
+
+                ppm_id=ppmData['ppmID']
+                
+                ppmRow = db( (db.sm_doctor_ppm.gift_id == ppm_id)).select(db.sm_doctor_ppm.gift_name)  
+                ppmName=''
+                if ppmRow:
+                    ppmName=ppmRow[0].gift_name
+                pass
+                =ppmName
+            }}</td>
+            <td class="text-center" >{{=ppmData['ppmID']}}</td>
+            <td class="text-center" >{{=ppmData['ppmQty']}}</td>
+          </tr>
+        {{pass}}
+
+       
+
+      </tbody>
+    </table>
+
+  {{pass}}
+
+{{pass}}
