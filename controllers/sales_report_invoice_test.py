@@ -2051,12 +2051,10 @@ def sales_report_detail_url():
     date_ton=now + datetime.timedelta(days = 1)
     date_to=str(date_ton).split(' ')[0]
 
-    to_date_show=date_from
+
 
     session.from_dt=date_from
     session.to_date=date_to
-    session.to_date_show=date_from
-
 
 
     btn_filter=request.vars.btn_filter
@@ -2086,15 +2084,10 @@ def sales_report_detail_url():
             date_to=str(date_ton).split(' ')[0]
             session.from_dt=str(from_dt).split(' ')[0]
             session.to_date=str(date_to)#.split(' ')[0]
-            session.to_date_show=str(to_date).split(' ')[0]
-
 
         except:
             session.from_dt=''
             session.to_date=''
-            session.to_date_show=''
-
-
             dateFlag=False
         reqPage=0
     elif btn_all:
@@ -2103,15 +2096,13 @@ def sales_report_detail_url():
         session.btn_all=btn_all
         session.from_dt=date_from
         session.to_date=date_to
-        session.to_date_show=to_date_show
-
         # return date_from
 
         # session.from_dt=str(from_dt).split(' ')[0]
         reqPage=0
         
 
-    redirect(URL(c='sales_report_invoice',f='sales_report_detail'))
+    redirect(URL(c='sales_report_invoice_test',f='sales_report_detail'))
 
 
 
@@ -2251,8 +2242,8 @@ def sales_report_detail():
                     condition=condition+" AND  area_id='"+ str(levelIdstr) +"'" 
 
 
-                sql_str="SELECT  area_id, area_name,order_date FROM sm_order_head  WHERE cid = '"+ str(cid) +"' AND order_date >= '"+ str(session.from_dt).split(' ')[0] +"' AND order_date <= '"+ str(session.to_date) +"' "+ condition + " GROUP BY area_id order by order_date desc, area_name asc;"
-                # return sql_str
+                sql_str="SELECT  area_id, area_name,order_date FROM sm_order_head  WHERE cid = '"+ str(cid) +"' AND order_date >= '"+ str(session.from_dt).split(' ')[0] +"' AND order_date < '"+ str(session.to_date) +"' "+ condition + " GROUP BY area_id order by order_date desc, area_name asc;"
+                return sql_str
                 records_ov=db.executesql(sql_str,as_dict = True)
 
                 recordsV_Count = qsetVCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.order_date, orderby=db.sm_order_head.area_name, groupby=db.sm_order_head.area_id)
@@ -2409,8 +2400,8 @@ def sales_report_detail():
                 if not(session.levelIdstr=='' or session.levelIdstr==None):
                     qsetVCount=qsetVCount(db.sm_order_head.area_id==levelIdstr)
                     condition=condition+" AND  area_id='"+ str(levelIdstr) +"'" 
-                sql_str="SELECT area_id, area_name, order_date  FROM sm_order_head WHERE cid = '"+ str(cid) +"'  AND order_date =  '"+ str(date_from) +"'  "+ condition + " GROUP BY area_id order by  area_name asc;"
-                # return sql_str
+                sql_str="SELECT area_id, area_name, order_date  FROM sm_order_head WHERE cid = '"+ str(cid) +"' AND order_date >= '"+ str(session.from_dt).split(' ')[0] +"' AND order_date < '"+ str(session.to_date) +"' "+ condition + " GROUP BY area_id order by  area_name asc;"
+                # return sql_str                                                                           +"' AND order_date >= '"+ str(session.from_dt).split(' ')[0] +"' AND order_date < '"+ str(session.to_date) +"' "
                 records_ov=db.executesql(sql_str,as_dict = True)
 
                 qsetVCount = qsetVCount(db.sm_order_head.order_date == date_from)

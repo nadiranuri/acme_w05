@@ -93,8 +93,8 @@ $(function() {
              {{=search_form.custom.widget.to_dt_2}} 
              {{pass}}
              To
-              {{if session.to_date!='' or  session.to_date!='None'  :}}
-             <input class="date" id="sm_search_date_to_dt_3" name="to_dt_3" type="text" value="{{=session.to_date}}">
+              {{if session.to_date_show!='' or  session.to_date_show!='None'  :}}
+             <input class="date" id="sm_search_date_to_dt_3" name="to_dt_3" type="text" value="{{=session.to_date_show}}">
              {{else:}}
               To{{=search_form.custom.widget.to_dt_3}} 
              {{pass}}
