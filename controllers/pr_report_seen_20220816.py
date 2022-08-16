@@ -146,7 +146,7 @@ def index():
     dr_am_ranking=request.vars.dr_am_ranking
     dr_zm_ranking=request.vars.dr_zm_ranking
     dr_rsm_ranking=request.vars.dr_rsm_ranking
-    btn_RX_Download = request.vars.btn_RX_Download
+    
     if btn_corp_share_by_brand or btn_institute_track2 or btn_company_track2_rm or btn_company_track2 :
         med_identical=request.vars.med_identical1
         med_division=request.vars.med_division1
@@ -499,35 +499,7 @@ def index():
             if btn_orphan_med_list:
                 redirect (URL('orphan_med_list',vars=dict(date_from=date_from,date_to=date_to)))
 
-    #---------- RX Download by suza ----------------- start
 
-    elif btn_RX_Download:
-        date_from = request.vars.from_dt_3
-        date_to = request.vars.to_dt_3
-
-        dateFlag = True
-        try:
-            from_dt2 = datetime.datetime.strptime(str(date_from), '%Y-%m-%d')
-            to_dt2 = datetime.datetime.strptime(str(date_to), '%Y-%m-%d')
-
-            if from_dt2 > to_dt2:
-                dateFlag = False
-        except:
-            dateFlag = False
-
-        if dateFlag == False:
-            response.flash = "Invalid Date Range"
-        else:
-            dateDiff = (to_dt2 - from_dt2).days
-
-            if dateDiff > 31:
-                response.flash = "Maximum 1 Month allowed between Date Range"
-                dateFlag = False
-
-        if dateFlag != False:
-            redirect (URL('seen_rx_details_download', vars=dict(date_from=date_from, date_to=date_to)))
-
-    #------------------------------- End -------------
 
     # region
     regionRows = db((db.sm_level.cid == c_id) & (db.sm_level.is_leaf == '0') & (db.sm_level.depth == 0)).select(db.sm_level.level_id, db.sm_level.level_name, orderby=db.sm_level.level_name)
@@ -6269,59 +6241,3 @@ def dr_sin_mpo_ranking():
     
     return dict (records=records,date_from=date_from,date_to=date_to,zm_id=zm_id,zm_name=zm_name,rsm_id=rsm_id,rsm_name=rsm_name,fm_id=fm_id,fm_name=fm_name,tl_id=tl_id,tl_name=tl_name,doc_id=doc_id,doc_name=doc_name,pr_brand=pr_brand)
 
-def seen_rx_details_download():
-    start_date_rx = request.vars.date_from
-    end_date_rx = request.vars.date_to
-
-    records ="select a.submit_date,a.created_on as rx_sending_time,a.sl as rx_id,a.reg_id as region_id,a.reg_name as region_name,a.tl_id as area_id,a.tl_name as area_name,a.area_id as base_code_new,'' as base_code_old,a.area_name as base_name, a.submit_by_id as submit_by_id,a.submit_by_name as submit_by_name,a.user_type as submit_by_type,a.doctor_id as doctor_id,a.doctor_name as doctor_name,a.doctor_speciality as speciality, a.doctor_degree as degree_name,b.medicine_id as product_code,b.medicine_name as product_name,b.brand as brand_id,'' as brand_name from sm_prescription_seen_head a,sm_prescription_seen_details b where a.cid='ACME' and a.submit_date>='" + start_date_rx + "' and a.submit_date<='" + end_date_rx + "' and a.cid=b.cid and a.sl=b.sl "
-
-    record_rowSTR = db.executesql(records, as_dict=True)
-
-    myString = 'RX List\n'
-    myString += 'Date Range:' + ',' + str(start_date_rx) + ' To ' + str(end_date_rx) + '\n\n'
-    myString +="SL,Submit Date,Rx sending Time,Rx ID,Region ID,Region Name,Area ID,Area Name,Base Code_New,Base Code_Old,Base Name,Submited_By_Id,Submited_by_Name,Submited_By_Type,Doctor_Id,Doctor Name,Speciality,Degree Name,Product Code,Product Name,Brand_Id,Brand_Name\n"
-    sl = 0
-    for i in range(len(record_rowSTR)):
-        recordListStr = record_rowSTR[i]
-        sl= sl+1
-        submit_date = recordListStr['submit_date']
-        rx_sending_time = recordListStr['rx_sending_time']
-        rx_id = recordListStr['rx_id']
-        region_id = recordListStr['region_id']
-        region_name = recordListStr['region_name']
-        area_id = recordListStr['area_id']
-        area_name = recordListStr['area_name']
-        base_code_new = recordListStr['base_code_new']
-        base_code_old = recordListStr['base_code_old']
-        base_name = recordListStr['base_name']
-
-        submit_by_id = recordListStr['submit_by_id']
-        submit_by_name = recordListStr['submit_by_name']
-        submit_by_type = recordListStr['submit_by_type']
-        doctor_id = recordListStr['doctor_id']
-        doctor_name = recordListStr['doctor_name']
-        speciality = recordListStr['speciality']
-        degree_name = recordListStr['degree_name']
-        product_code = recordListStr['product_code']
-        product_name = recordListStr['product_name']
-        brand_id = recordListStr['brand_id']
-        brand_name = recordListStr['brand_name']
-
-        myString += str(sl) + ',' +str(submit_date) + ',' + str(rx_sending_time) + ',' + str(rx_id) + ',' + str(region_id) + ',' + str(
-            region_name) + ',' + str(area_id) + ',' + str(area_name) + ',' + str(base_code_new) + ',' + str(base_code_old) + ',' + str(
-            base_name)+ ',' + str(
-            submit_by_id)+ ',' + str(
-            submit_by_name)+ ',' + str(
-            submit_by_type)+ ',' + str(
-            doctor_id)+ ',' + str(
-            doctor_name)+ ',' + str(
-            speciality)+ ',' + str(
-            degree_name)+ ',' + str(
-            product_code)+ ',' + str(
-            product_name) + ',' + str(
-            brand_id) + ',' + str(
-            brand_name)  + '\n'
-    import gluon.contenttype
-    response.headers['Content-Type'] = gluon.contenttype.contenttype('.csv')
-    response.headers['Content-disposition'] = 'attachment; filename=seen_rx_details_download.csv'
-    return str(myString)

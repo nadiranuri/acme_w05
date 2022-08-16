@@ -2251,38 +2251,38 @@ def sales_report_detail():
                     condition=condition+" AND  area_id='"+ str(levelIdstr) +"'" 
 
 
-                sql_str="SELECT  area_id, area_name,order_date FROM sm_order_head  WHERE cid = '"+ str(cid) +"' AND order_date >= '"+ str(session.from_dt).split(' ')[0] +"' AND order_date <= '"+ str(session.to_date) +"' "+ condition + " GROUP BY area_id order by order_date desc, area_name asc;"
+                sql_str="SELECT  area_id, max(area_name),rep_id,max(rep_name) FROM sm_order_head  WHERE cid = '"+ str(cid) +"' AND order_date >= '"+ str(session.from_dt).split(' ')[0] +"' AND order_date < '"+ str(session.to_date) +"' "+ condition + " GROUP BY area_id, area_name,rep_id,rep_name  order by area_name,rep_name asc;"
                 # return sql_str
                 records_ov=db.executesql(sql_str,as_dict = True)
 
-                recordsV_Count = qsetVCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.order_date, orderby=db.sm_order_head.area_name, groupby=db.sm_order_head.area_id)
+                recordsV_Count = qsetVCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.rep_id,db.sm_order_head.rep_name, orderby=db.sm_order_head.area_name|db.sm_order_head.rep_name, groupby=db.sm_order_head.area_id|db.sm_order_head.area_name|db.sm_order_head.rep_id|db.sm_order_head.rep_name)
                 # return recordsV_Count
                 vChecklist=[]
                 vCountList=[]
                 for recordsV_Count in recordsV_Count:
                     vCount=recordsV_Count[db.sm_order_head.sl.count()]
-                    vCheck=str(recordsV_Count[db.sm_order_head.area_id]) 
+                    vCheck=str(recordsV_Count[db.sm_order_head.area_id]) +'|'+str(recordsV_Count[db.sm_order_head.rep_id])
                     vChecklist.append(vCheck)
                     vCountList.append(vCount) 
                 # return vCheck
 
-                recordsO_Count = qsetOCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.order_date, orderby=db.sm_order_head.area_name,groupby=db.sm_order_head.area_id)
+                recordsO_Count = qsetOCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.rep_id,db.sm_order_head.rep_name, orderby=db.sm_order_head.area_name|db.sm_order_head.rep_name, groupby=db.sm_order_head.area_id|db.sm_order_head.area_name|db.sm_order_head.rep_id|db.sm_order_head.rep_name)
                 OChecklist=[]
                 OCountList=[]
                 for recordsO_Count in recordsO_Count:
                     oCount=recordsO_Count[db.sm_order_head.sl.count()] 
                     
-                    oCheck=str(recordsO_Count[db.sm_order_head.area_id]) 
+                    oCheck=str(recordsO_Count[db.sm_order_head.area_id]) +'|'+str(recordsO_Count[db.sm_order_head.rep_id])
                     OChecklist.append(oCheck)
                     OCountList.append(oCount)
 
-                recordsO_amount = qstOAmount.select(((db.sm_order.price) * ( db.sm_order.quantity )).sum(),db.sm_order.area_id,db.sm_order.order_date, orderby=db.sm_order.area_name, groupby=db.sm_order.area_id)
+                recordsO_amount = qstOAmount.select(((db.sm_order.price) * ( db.sm_order.quantity )).sum(),db.sm_order.area_id,db.sm_order.area_name,db.sm_order.rep_id,db.sm_order.rep_name, orderby=db.sm_order.area_name|db.sm_order.rep_name, groupby=db.sm_order.area_id)
                  
                 OAmountChecklist=[]
                 OamountList=[]
                 for recordsO_amount in recordsO_amount:
                     oaCount=recordsO_amount[((db.sm_order.price)*(db.sm_order.quantity)).sum()]
-                    oaCheck=str(recordsO_amount[db.sm_order.area_id]) 
+                    oaCheck=str(recordsO_amount[db.sm_order.area_id]) +'|'+str(recordsO_amount[db.sm_order.rep_id])
                     OAmountChecklist.append(oaCheck)
                     OamountList.append(oaCount)
 
@@ -2346,8 +2346,6 @@ def sales_report_detail():
                     level_id = levelRow.level_id
                     
                     rp_areaList.append(level_id)
-                    
-
                     if repAreaStr=='':
                         repAreaStr="'"+str(level_id)+"'"
                     else:
@@ -2409,46 +2407,56 @@ def sales_report_detail():
                 if not(session.levelIdstr=='' or session.levelIdstr==None):
                     qsetVCount=qsetVCount(db.sm_order_head.area_id==levelIdstr)
                     condition=condition+" AND  area_id='"+ str(levelIdstr) +"'" 
-                sql_str="SELECT area_id, area_name, order_date  FROM sm_order_head WHERE cid = '"+ str(cid) +"'  AND order_date =  '"+ str(date_from) +"'  "+ condition + " GROUP BY area_id order by  area_name asc;"
+                sql_str="SELECT area_id, max(area_name),rep_id,max(rep_name)  FROM sm_order_head WHERE cid = '"+ str(cid) +"'  AND order_date >=  '"+ str(session.from_dt) +"'   AND order_date <  '"+ str(session.to_date) +"'  "+ condition + " GROUP BY area_id ,rep_id order by  area_id, rep_id asc;"
                 # return sql_str
                 records_ov=db.executesql(sql_str,as_dict = True)
 
-                qsetVCount = qsetVCount(db.sm_order_head.order_date == date_from)
-                qsetOCount = qsetOCount(db.sm_order_head.order_date ==date_from)
-                qstOAmount = qstOAmount(db.sm_order.order_date ==date_from)
+
+                # qsetVCount = qsetVCount(db.sm_order_head.order_date >= session.from_dt)
+                # qsetVCount = qsetVCount(db.sm_order_head.order_date < session.to_date)
+
+                # qsetOCount = qsetOCount(db.sm_order_head.order_date >= session.from_dt)
+                # qsetOCount = qsetOCount(db.sm_order_head.order_date < session.to_date)  
+
+                # qstOAmount = qstOAmount(db.sm_order.order_date >= session.from_dt)
+                # qstOAmount = qstOAmount(db.sm_order.order_date < session.to_date)  
+
+                # qsetVCount = qsetVCount(db.sm_order_head.order_date == date_from)
+                # qsetOCount = qsetOCount(db.sm_order_head.order_date ==date_from)
+                # qstOAmount = qstOAmount(db.sm_order.order_date ==date_from)
 
 
-                recordsV_Count = qsetVCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.order_date, orderby=db.sm_order_head.area_name, groupby=db.sm_order_head.area_id)
+                recordsV_Count = qsetVCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.rep_id, orderby=db.sm_order_head.area_id|db.sm_order_head.rep_id, groupby=db.sm_order_head.area_id|db.sm_order_head.rep_id)
 
                 vChecklist=[]
                 vCountList=[]
                 for recordsV_Count in recordsV_Count:
                     vCount=recordsV_Count[db.sm_order_head.sl.count()]
-                    vCheck=str(recordsV_Count[db.sm_order_head.area_id]) 
+                    vCheck=str(recordsV_Count[db.sm_order_head.area_id]) +'|'+str(recordsV_Count[db.sm_order_head.rep_id])
 
                     vChecklist.append(vCheck)
                     vCountList.append(vCount) 
 
 
 
-                recordsO_Count = qsetOCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.order_date, orderby=db.sm_order_head.level0_name, groupby=db.sm_order_head.area_id)
+                recordsO_Count = qsetOCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.rep_id,db.sm_order_head.rep_name, orderby=db.sm_order_head.area_id|db.sm_order_head.rep_id, groupby=db.sm_order_head.area_id|db.sm_order_head.rep_id)
                 OChecklist=[]
                 OCountList=[]
                 for recordsO_Count in recordsO_Count:
                     oCount=recordsO_Count[db.sm_order_head.sl.count()]
-                    oCheck=str(recordsO_Count[db.sm_order_head.area_id]) 
+                    oCheck=str(recordsO_Count[db.sm_order_head.area_id]) +'|'+str(recordsO_Count[db.sm_order_head.rep_id])
                     OChecklist.append(oCheck)
                     OCountList.append(oCount)
 
 
 
-                recordsO_amount = qstOAmount.select(((db.sm_order.price) * ( db.sm_order.quantity )).sum(),db.sm_order.area_id,db.sm_order.order_date, orderby=db.sm_order.level0_name, groupby=db.sm_order.area_id)
-                 
+                recordsO_amount = qstOAmount.select(((db.sm_order.price) * ( db.sm_order.quantity )).sum(),db.sm_order.area_id,db.sm_order.area_name,db.sm_order.rep_id,db.sm_order.rep_name, orderby=db.sm_order.area_id|db.sm_order.rep_id, groupby=db.sm_order.area_id|db.sm_order.rep_id)
+                
                 OAmountChecklist=[]
                 OamountList=[]
                 for recordsO_amount in recordsO_amount:
                     oaCount=recordsO_amount[((db.sm_order.price)*(db.sm_order.quantity)).sum()] 
-                    oaCheck=str(recordsO_amount[db.sm_order.area_id]) 
+                    oaCheck=str(recordsO_amount[db.sm_order.area_id]) +'|'+str(recordsO_amount[db.sm_order.rep_id])
                     OAmountChecklist.append(oaCheck)
                     OamountList.append(oaCount)
 
@@ -2494,12 +2502,17 @@ def sales_report_area_wise_url():
     to_date = str(request.vars.to_date).strip()
     from_dt = str(request.vars.from_date).strip()
     invoice_count=str(request.vars.invoice_count).strip()
+    s_id=str(request.vars.s_id).strip()
+
 
     
     rep_id_report = str(request.vars.rep_id_report).strip().upper()
     se_item_report = str(request.vars.se_item_report).strip().upper()
     se_market_report = str(request.vars.se_market_report).strip().upper()
     order_count = str(request.vars.order_count).strip().upper()
+    s_id = str(request.vars.s_id).strip().upper()
+
+
     # order_date=str(request.vars.order_date).strip()
     
     session.cid=cid
@@ -2514,6 +2527,8 @@ def sales_report_area_wise_url():
     session.rep_id_report=rep_id_report
     session.se_item_report=se_item_report
     session.se_market_report=se_market_report
+
+    session.s_id=s_id
 
     session.to_date=to_date
     session.from_dt=from_dt
@@ -2538,6 +2553,7 @@ def sales_report_area_wise():
     synccode=session.synccode
     area_id=session.area_id
     area_name=session.area_name
+    s_id=session.s_id
 
     rep_id_report=session.rep_id_report
     se_item_report=session.se_item_report
@@ -2646,6 +2662,9 @@ def sales_report_area_wise():
         qset=qset(db.sm_order_head.order_date <= to_date)
 
         qset=qset(db.sm_order_head.area_id==area_id)
+        qset=qset(db.sm_order_head.rep_id==s_id)
+
+        
         records=qset.select(db.sm_order_head.sl.count())
         if records:
             sales_call=records[0][db.sm_order_head.sl.count()]
@@ -2657,6 +2676,8 @@ def sales_report_area_wise():
         qset=qset(db.sm_order_head.order_date >= from_date)
         qset=qset(db.sm_order_head.order_date <= to_date)
         qset_oc=qset_oc(db.sm_order_head.area_id==area_id)
+        qset_oc=qset_oc(db.sm_order_head.rep_id==s_id)
+
         records_oc=qset_oc.select(db.sm_order_head.sl.count())
         # return db._lastsql
         if records_oc:
@@ -2666,12 +2687,12 @@ def sales_report_area_wise():
         condition=condition+" AND area_id IN ("+str(marketStr)+")"  
 
         records_ov=[]
-        sql_str="SELECT (sm_order.client_id) as client_id,(sm_order.client_name) as client_name,SUM((sm_order.price) * (sm_order.quantity)) as totalprice, sm_order.area_id as area_id, sm_order.vsl as vsl FROM sm_order WHERE sm_order.cid = '"+ str(cid) +"' and sm_order.area_id='"+ area_id+"' and sm_order.order_date>='"+ from_date+"' and sm_order.order_date<='"+ to_date+"'  GROUP BY area_id,vsl ORDER BY vsl DESC  ;"
+        sql_str="SELECT (sm_order.client_id) as client_id,(sm_order.client_name) as client_name,SUM((sm_order.price) * (sm_order.quantity)) as totalprice, sm_order.area_id as area_id, sm_order.vsl as vsl FROM sm_order WHERE sm_order.cid = '"+ str(cid) +"' and sm_order.area_id='"+ area_id+"' and sm_order.rep_id='"+ s_id+"' and sm_order.order_date>='"+ from_date+"' and sm_order.order_date<='"+ to_date+"'  GROUP BY area_id,vsl ORDER BY vsl DESC  ;"
         records_ov=db.executesql(sql_str,as_dict = True)               
 
 
     order_date=''
-    return dict(date_to=date_to,order_count=order_count_show,invoice_count=invoice_count,cid=cid,rep_id=rep_id,password=password,synccode=synccode,records_ov=records_ov,area_id=area_id,area_name=area_name,order_date=order_date)
+    return dict(date_to=date_to,order_count=order_count_show,invoice_count=invoice_count,cid=cid,rep_id=rep_id,password=password,synccode=synccode,records_ov=records_ov,area_id=area_id,area_name=area_name,order_date=order_date,s_id=s_id)
 
 
 def sales_report_slWise():

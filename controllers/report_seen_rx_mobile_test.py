@@ -89,7 +89,7 @@ def index():
 
         session.level_area_id_list = level_area_id_list
         
-        redirect(URL(c='report_seen_rx_mobile', f='home',vars=dict(cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code)))
+        redirect(URL(c='report_seen_rx_mobile_test', f='home',vars=dict(cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code)))
 
     return dict()
 
@@ -179,9 +179,9 @@ def home():
         # qset = qset(db.sm_prescription_seen_head.area_id.belongs(session.level_area_id_list))
 
 
-    records=qset.select(db.sm_prescription_seen_head.submit_date,db.sm_prescription_seen_head.submit_by_id,db.sm_prescription_seen_head.submit_by_name,db.sm_prescription_seen_head.area_id,db.sm_prescription_seen_head.id.count(),groupby=db.sm_prescription_seen_head.submit_date|db.sm_prescription_seen_head.submit_by_id|db.sm_prescription_seen_head.submit_by_name|db.sm_prescription_seen_head.area_id,orderby=~db.sm_prescription_seen_head.submit_date|db.sm_prescription_seen_head.area_id|db.sm_prescription_seen_head.submit_by_id)
+    records=qset.select(db.sm_prescription_seen_head.submit_date,db.sm_prescription_seen_head.submit_by_id,db.sm_prescription_seen_head.submit_by_name,db.sm_prescription_seen_head.area_id,db.sm_prescription_seen_head.id.count(),groupby=db.sm_prescription_seen_head.submit_date|db.sm_prescription_seen_head.submit_by_id|db.sm_prescription_seen_head.submit_by_name|db.sm_prescription_seen_head.area_id,orderby=db.sm_prescription_seen_head.area_id|db.sm_prescription_seen_head.submit_by_id)
     
-    # return db._lastsql
+    return db._lastsql
     # rx count
     qsetH = db()
     qsetH = qsetH(db.sm_prescription_seen_head.cid == session.cid)
@@ -200,8 +200,7 @@ def home():
         # qsetH = qsetH(db.sm_prescription_seen_head.area_id.belongs(session.level_area_id_list))
 
     recordsH=qsetH.count()
-    # recordsH=recordsH.select(db.sm_prescription_seen_head.submit_date)
-    # return db._lastsql
+
     
     return dict(cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code,records=records,recordsH=recordsH,level_area_list=level_area_list)
 
@@ -218,9 +217,6 @@ def report_seen_rx_area_wise_url():
     area_id = str(request.vars.area_id).strip()
     to_date = str(request.vars.to_date).strip()
     from_dt = str(request.vars.from_date).strip()
-
-    s_id = str(request.vars.s_id).strip().upper()
-
     
     # return area_id
    
@@ -229,8 +225,6 @@ def report_seen_rx_area_wise_url():
     session.rep_pass=rep_pass
     session.sync_code=sync_code
     session.area_id=area_id
-    session.s_id=s_id
-
 
     
     session.to_date=to_date
@@ -249,7 +243,6 @@ def report_seen_rx_area_wise():
     rep_pass=session.rep_pass
     sync_code=session.sync_code
     area_id=session.area_id
-    s_id=session.s_id
     
     from_date=session.from_dt
     to_date=session.to_date
@@ -300,10 +293,8 @@ def report_seen_rx_area_wise():
     
         condition=""                
         condition="and  sm_prescription_seen_head.area_id  = '"+str(area_id) +"'"
-        condition=condition+ "and sm_prescription_seen_head.submit_date  >= '"+str(session.from_date) +"'"
-        condition=condition+ "and sm_prescription_seen_head.submit_date  <= '"+str(session.to_date) +"'"
 
-         
+        condition=condition+ "and sm_prescription_seen_head.submit_date  >= '"+str(session.from_date) +"' and sm_prescription_seen_head.submit_date  <= '"+str(session.to_date) +"'"
         # return condition
         records_ov=[]
             
@@ -317,21 +308,16 @@ def report_seen_rx_area_wise():
 
         condition=''
         condition=condition+" AND area_id IN ("+str(area_id)+")"  
-        condition=condition+ "and sm_prescription_seen_head.submit_date  >= '"+str(session.from_date) +"'"
-        condition=condition+ "and sm_prescription_seen_head.submit_date  <= '"+str(session.to_date) +"'"
-
-        
-
 
         records_ov=[]
         # sql_str="SELECT (sm_order.client_id) as client_id,(sm_order.client_name) as client_name,SUM((sm_order.price) * (sm_order.quantity)) as totalprice, sm_order.area_id as area_id, sm_order.vsl as vsl FROM sm_order WHERE sm_order.cid = '"+ str(cid) +"' and sm_order.area_id='"+ area_id+"' and sm_order.order_date>='"+ from_date+"' and sm_order.order_date<='"+ to_date+"'  GROUP BY area_id,vsl ORDER BY vsl DESC  ;"
-        sql_str="SELECT COUNT(sm_prescription_seen_head.id) as id_count,(sm_prescription_seen_head.sl) as medicine_sl,(sm_prescription_seen_head.doctor_id) as doctor_id,(sm_prescription_seen_head.doctor_name) as doctor_name FROM sm_prescription_seen_head WHERE sm_prescription_seen_head.cid = '"+ str(cid)+"' and sm_prescription_seen_head.submit_by_id ='"+ s_id +"'" +condition+"   GROUP BY doctor_id ,doctor_name ;"        
-        # return sql_str
+        sql_str="SELECT COUNT(sm_prescription_seen_head.id) as id_count,(sm_prescription_seen_head.sl) as medicine_sl,(sm_prescription_seen_head.doctor_id) as doctor_id,(sm_prescription_seen_head.doctor_name) as doctor_name FROM sm_prescription_seen_head WHERE sm_prescription_seen_head.cid = '"+ str(cid)+"' and sm_prescription_seen_head.submit_by_id ='"+ rep_id +"'" +condition+"   GROUP BY doctor_id  ;"        
+        
         records_ov=db.executesql(sql_str,as_dict = True)               
 
 
     # order_date=''
-    return dict(date_to=date_to,cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code,records_ov=records_ov,area_id=area_id,s_id=s_id)
+    return dict(date_to=date_to,cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code,records_ov=records_ov,area_id=area_id)
 
 
 def report_seen_rx_slWise_url():
@@ -402,7 +388,7 @@ def report_seen_rx_slWise():
            retStatus = 'FAILED<SYNCDATA>Invalid Area'
            return retStatus
         else:
-            sql_str="SELECT medicine_name,medicine_id,sl FROM sm_prescription_seen_details WHERE sm_prescription_seen_details.cid = '"+ str(cid) +"' AND sm_prescription_seen_details.sl= '"+ str(medicine_sl) +"' AND sm_prescription_seen_details.area_id='"+str(area_id)+"' AND sm_prescription_seen_details.doctor_id='"+str(doctor_id)+"'  GROUP BY sm_prescription_seen_details.area_id,medicine_id;"
+            sql_str="SELECT medicine_name,medicine_id,sl FROM sm_prescription_seen_details WHERE sm_prescription_seen_details.cid = '"+ str(cid) +"' AND sm_prescription_seen_details.submit_by_id = '"+ str(rep_id) +"' AND sm_prescription_seen_details.sl= '"+ str(medicine_sl) +"' AND sm_prescription_seen_details.area_id='"+str(area_id)+"' AND sm_prescription_seen_details.doctor_id='"+str(doctor_id)+"'  GROUP BY sm_prescription_seen_details.area_id,medicine_id;"
             # return sql_str
             records_ov=db.executesql(sql_str,as_dict = True)
 

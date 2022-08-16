@@ -86,11 +86,7 @@ input[type=submit]{
     </tr>
     </form>
 </table>
-<table style="border-collapse:collapse; width:100%;">	  
-    <tr style="background-color:#ECF4FD; font-size:10px;border-bottom:1px solid #E6E6E6;">
-    	<td width="100%" style="text-align:right;" >Rx Count : {{=recordsH}}&nbsp; &nbsp;</td>
-    </tr>
-</table>
+
 {{if not records:}}
 	Not Available
 {{else:}}
@@ -104,11 +100,15 @@ input[type=submit]{
         <td width="10%" align="center" >Count</td>
         <td width="30%" ></td>
     </tr>
+    {{grand_total=0}}
     {{for row in records:}}
     
     {{
     area_name=''
     area_id=''
+    get_total=0
+    s_id=row[db.sm_prescription_seen_head.submit_by_id]
+    #=s_id
     for i in range(len(level_area_list)):
         level_area_list_s=level_area_list[i]           	
         if level_area_list_s['area_id']==row[db.sm_prescription_seen_head.area_id]:
@@ -122,20 +122,45 @@ input[type=submit]{
     	<td >{{=area_name}}|{{=area_id}} </td>
         <td >{{=row[db.sm_prescription_seen_head.submit_by_name]}}</td>
        <!--  <td >{{#=row[db.sm_prescription_seen_head.medicine_name]}}</td> -->
-        <td align="center" >{{=row[db.sm_prescription_seen_head.id.count()]}}</td>
+        <td align="center" >{{=row[db.sm_prescription_seen_head.id.count()]}} 
+            {{grand_total=grand_total+int(row[db.sm_prescription_seen_head.id.count()])}}
+        </td>
+
+
     
 
        
     <td class="text-right">
-
+        {{#=URL(c='report_seen_rx_mobile',f='report_seen_rx_area_wise_url',vars=dict(cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code,to_date=session.to_date,from_date=session.from_dt,area_id=area_id,s_id=s_id))}}
         {{if area_id!='':}}
-                <a style="text-decoration: none;font-size: 20px"  href="{{=URL(c='report_seen_rx_mobile',f='report_seen_rx_area_wise_url',vars=dict(cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code,to_date=session.to_date,from_date=session.from_dt,area_id=area_id))}}" >&raquo;</a>
+                <a style="text-decoration: none;font-size: 20px"  href="{{=URL(c='report_seen_rx_mobile',f='report_seen_rx_area_wise_url',vars=dict(cid=cid,rep_id=rep_id,rep_pass=rep_pass,sync_code=sync_code,to_date=session.to_date,from_date=session.from_dt,area_id=area_id,s_id=s_id))}}" >&raquo;</a>
 
         {{else:}}
         {{pass}}
     </td>
    </tr>
     {{pass}} 
+
+
+
+
+----------
+<tr style="background-color:#f7ddd8; font-size:10px;border-bottom:1px solid #E6E6E6;">
+        <td ></td>
+        <td ></td>
+        <td >Rx Count :</td>
+       
+        <td align="center" >{{=grand_total}}
+        </td>
+
+
+    
+
+       
+    <td class="text-right">
+    </td>
+   </tr>
+
 </table>
 {{pass}}
   
