@@ -240,7 +240,7 @@ def sales_report_zm_0():
         # return session.btn_filter
         records_ov=[]
         if session.btn_filter:
-            sql_str="SELECT level0_id,  level0_name,area_id,  area_name, order_date  FROM sm_order_head WHERE cid = '"+ str(cid) +"'  AND order_date >= '"+ str(session.from_dt) +"' AND order_date <= '"+ str(session.to_date) +"'  "+ condition + " GROUP BY level0_id order by level0_name asc;"
+            sql_str="SELECT level0_id,  level0_name,area_id,  area_name, order_date,field1  FROM sm_order_head WHERE cid = '"+ str(cid) +"'  AND order_date >= '"+ str(session.from_dt) +"' AND order_date <= '"+ str(session.to_date) +"'  "+ condition + " GROUP BY level0_id order by level0_name asc;"
             records_ov=db.executesql(sql_str,as_dict = True)
              
             if not(session.from_dt=='' and session.from_dt==None and session.to_date=='' and session.to_date==None):
@@ -2111,7 +2111,7 @@ def sales_report_detail_url():
         reqPage=0
         
 
-    redirect(URL(c='sales_report_invoice_test',f='sales_report_detail'))
+    redirect(URL(c='sales_report_invoice',f='sales_report_detail'))
 
 
 
@@ -2156,7 +2156,7 @@ def sales_report_detail():
         
 
         repRow = db((db.sm_rep.cid == cid) & (db.sm_rep.rep_id == rep_id) & (db.sm_rep.password == password)  & (db.sm_rep.status == 'ACTIVE')).select(db.sm_rep.ALL, limitby=(0, 1))
-        # return repRow
+        # return db._lastsql
         if not repRow:
            retStatus = 'FAILED<SYNCDATA>Invalid Authorization'
            return retStatus
@@ -2267,6 +2267,7 @@ def sales_report_detail():
                 # return vCheck
 
                 recordsO_Count = qsetOCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.rep_id,db.sm_order_head.rep_name, orderby=db.sm_order_head.area_name|db.sm_order_head.rep_name, groupby=db.sm_order_head.area_id|db.sm_order_head.area_name|db.sm_order_head.rep_id|db.sm_order_head.rep_name)
+                 
                 OChecklist=[]
                 OCountList=[]
                 for recordsO_Count in recordsO_Count:
@@ -2361,24 +2362,66 @@ def sales_report_detail():
             if int(depth)==2:
                 c_sql_str="SELECT * FROM `sm_supervisor_level` WHERE level_id in ("+str(level_str)+")  and level_id in (SELECT level2 FROM `sm_level` WHERE `special_territory_code` IS NOT NULL AND `depth` = 3 and special_territory_code!='NULL')"
                 records_c_team=db.executesql(c_sql_str,as_dict = True)
+            # return len(records_c_team)
             c_team=0
-            if len(records_c_team) > 0:
+            if int(len(records_c_team)) > 0:
                 c_team=1
+            
+            # return c_team
             # =============
             rp_areaList=[]
             for i in range(len(levelList)):
                 levelRows = db((db.sm_level.cid == cid) & (db.sm_level.is_leaf == '1') & (db.sm_level[level] == levelList[i]) ).select(db.sm_level.level_id, db.sm_level.level_name, db.sm_level.depot_id,db.sm_level.special_territory_code)
                 for levelRow in levelRows:
                     level_id = levelRow.level_id
+                    sp_level_id = levelRow.special_territory_code
                     
-                    rp_areaList.append(level_id)
-                    if repAreaStr=='':
-                        repAreaStr="'"+str(level_id)+"'"
+                    
+
+                    if c_team==1:
+                        if sp_level_id not in rp_areaList:
+                            rp_areaList.append(sp_level_id)
+                            if ((sp_level_id != 'NULL') and (sp_level_id != '')):
+                                if repAreaStr=='':
+                                    repAreaStr="'"+str(sp_level_id)+"'"
+                                else:
+                                    repAreaStr=repAreaStr+",'"+str(sp_level_id)+"'" 
                     else:
-                        repAreaStr=repAreaStr+",'"+str(level_id)+"'" 
-                
+                        if sp_level_id not in rp_areaList:
+                            rp_areaList.append(level_id)
+                            if repAreaStr=='':
+                                repAreaStr="'"+str(level_id)+"'"
+                            else:
+                                repAreaStr=repAreaStr+",'"+str(level_id)+"'" 
+            # return  repAreaStr   
+            # ==================
+            # return c_team
+            rp_List=[]
+            repStr_new=''
+            rep_sql_str="SELECT rep_id FROM `sm_rep_area` WHERE  area_id in ("+str(repAreaStr)+")"
+            # returarean rep_sql_str
+            rep_record=db.executesql(rep_sql_str,as_dict = True)
+            for i in range(len(rep_record)):
+                rep_id_single=rep_record[i]
+                rep_id = str(rep_id_single['rep_id'])
+
+                # return rep_record[i]
+                if rep_id not in rp_List:
+                    rp_List.append(rep_id)
+                    if repStr_new=='':
+                        repStr_new="'"+str(rep_id)+"'"
+                    else:
+                        repStr_new=repStr_new+",'"+str(rep_id)+"'" 
+            # return repStr_new
+            # =================
+
+
+            
             condition=""
-            condition="and area_id IN ("+str(repAreaStr)+")" 
+            # condition="and area_id IN ("+str(repAreaStr)+")" 
+            condition="and rep_id IN ("+str(repStr_new)+")" 
+
+            
             # return condition
             # condition=condition+" and rep_id ='"+ str(rep_id) +"'"
 
@@ -2389,14 +2432,18 @@ def sales_report_detail():
             # qsetVCount = qsetVCount(db.sm_order_head.rep_id==rep_id)
             qsetVCount = qsetVCount(db.sm_order_head.order_date >= session.from_dt)
             qsetVCount = qsetVCount(db.sm_order_head.order_date < session.to_date) 
-            qsetVCount = qsetVCount(db.sm_order_head.area_id.belongs(rp_areaList))
+            qsetVCount = qsetVCount(db.sm_order_head.rep_id.belongs(rp_List))
+
+            # qsetVCount = qsetVCount(db.sm_order_head.area_id.belongs(rp_areaList))
 
             qsetOCount = db()
             qsetOCount = qsetOCount(db.sm_order_head.cid == cid) 
             # qsetOCount = qsetOCount(db.sm_order_head.rep_id == rep_id)  
             qsetOCount = qsetOCount(db.sm_order_head.order_date >= session.from_dt)
             qsetOCount = qsetOCount(db.sm_order_head.order_date < session.to_date) 
-            qsetOCount = qsetOCount(db.sm_order_head.area_id.belongs(rp_areaList))
+            qsetOCount = qsetOCount(db.sm_order_head.rep_id.belongs(rp_List))
+
+            # qsetOCount = qsetOCount(db.sm_order_head.area_id.belongs(rp_areaList))
             qsetOCount = qsetOCount(db.sm_order_head.field1=='ORDER')
 
             qstOAmount = db()
@@ -2404,52 +2451,24 @@ def sales_report_detail():
             # qstOAmount = qstOAmount(db.sm_order.rep_id == rep_id)  
             qstOAmount = qstOAmount(db.sm_order.order_date >= session.from_dt)
             qstOAmount = qstOAmount(db.sm_order.order_date < session.to_date)
-            qstOAmount = qstOAmount(db.sm_order.area_id.belongs(rp_areaList))
+            qstOAmount = qstOAmount(db.sm_order_head.rep_id.belongs(rp_List))
 
-            # qstInvcCount = db()
-            # qstInvcCount = qstInvcCount(db.sm_invoice_head.cid == cid)
-            # # qstInvcCount = qstInvcCount(db.sm_invoice_head.rep_id == rep_id) 
-            # qstInvcCount = qstInvcCount(db.sm_invoice_head.invoice_date >= session.from_dt)
-            # qstInvcCount = qstInvcCount(db.sm_invoice_head.invoice_date < date_to_next)
-            # qstInvcCount = qstInvcCount(db.sm_invoice_head.status == 'Invoiced')
-            # qstInvcCount = qstInvcCount(db.sm_invoice_head.area_id.belongs(rp_areaList))
-
-
-            # qstInvcAmnt = db()
-            # qstInvcAmnt = qstInvcAmnt(db.sm_invoice.cid == cid)
-            # # qstInvcAmnt = qstInvcAmnt(db.sm_invoice.rep_id == rep_id)
-            # qstInvcAmnt = qstInvcAmnt(db.sm_invoice.invoice_date >= session.from_dt)
-            # qstInvcAmnt = qstInvcAmnt(db.sm_invoice.order_datetime < date_to_next)
-            # qstInvcAmnt = qstInvcAmnt(db.sm_invoice.status == 'Invoiced')
-            # qstInvcAmnt = qstInvcAmnt(db.sm_invoice.area_id.belongs(rp_areaList))
-
+            
 
             records_ov=[]
             # =============
-
+            # return session.btn_filter
             if session.btn_filter:
                 
                 # return date_from 
                 if not(session.levelIdstr=='' or session.levelIdstr==None):
-                    qsetVCount=qsetVCount(db.sm_order_head.area_id==levelIdstr)
-                    condition=condition+" AND  area_id='"+ str(levelIdstr) +"'" 
-                sql_str="SELECT area_id, max(area_name),rep_id,max(rep_name)  FROM sm_order_head WHERE cid = '"+ str(cid) +"'  AND order_date >=  '"+ str(session.from_dt) +"'   AND order_date <  '"+ str(session.to_date) +"'  "+ condition + " GROUP BY area_id ,rep_id order by  area_id, rep_id asc;"
+                    qsetVCount=qsetVCount(db.sm_order_head.rep_id==rp_List)
+                    condition=condition+" AND  rep_id='"+ str(rp_List) +"'" 
+
+                sql_str="SELECT area_id, max(area_name),rep_id,max(rep_name),field1  FROM sm_order_head WHERE cid = '"+ str(cid) +"'  AND order_date >=  '"+ str(session.from_dt) +"'   AND order_date <  '"+ str(session.to_date) +"'  "+ condition + " GROUP BY area_id ,rep_id order by  area_id, rep_id asc;"
                 # return sql_str
                 records_ov=db.executesql(sql_str,as_dict = True)
 
-
-                # qsetVCount = qsetVCount(db.sm_order_head.order_date >= session.from_dt)
-                # qsetVCount = qsetVCount(db.sm_order_head.order_date < session.to_date)
-
-                # qsetOCount = qsetOCount(db.sm_order_head.order_date >= session.from_dt)
-                # qsetOCount = qsetOCount(db.sm_order_head.order_date < session.to_date)  
-
-                # qstOAmount = qstOAmount(db.sm_order.order_date >= session.from_dt)
-                # qstOAmount = qstOAmount(db.sm_order.order_date < session.to_date)  
-
-                # qsetVCount = qsetVCount(db.sm_order_head.order_date == date_from)
-                # qsetOCount = qsetOCount(db.sm_order_head.order_date ==date_from)
-                # qstOAmount = qstOAmount(db.sm_order.order_date ==date_from)
 
 
                 recordsV_Count = qsetVCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.rep_id, orderby=db.sm_order_head.area_id|db.sm_order_head.rep_id, groupby=db.sm_order_head.area_id|db.sm_order_head.rep_id)
@@ -2465,7 +2484,8 @@ def sales_report_detail():
 
 
 
-                recordsO_Count = qsetOCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.area_name,db.sm_order_head.rep_id,db.sm_order_head.rep_name, orderby=db.sm_order_head.area_id|db.sm_order_head.rep_id, groupby=db.sm_order_head.area_id|db.sm_order_head.rep_id)
+                recordsO_Count = qsetOCount.select(db.sm_order_head.sl.count(),db.sm_order_head.area_id,db.sm_order_head.rep_id, orderby=db.sm_order_head.area_id|db.sm_order_head.rep_id, groupby=db.sm_order_head.area_id|db.sm_order_head.rep_id)
+                # return db._lastsql
                 OChecklist=[]
                 OCountList=[]
                 for recordsO_Count in recordsO_Count:
@@ -2486,31 +2506,17 @@ def sales_report_detail():
                     OAmountChecklist.append(oaCheck)
                     OamountList.append(oaCount)
 
-
+                # return db._lastsql
 
                 # recordsInvcCount = qstInvcCount.select(db.sm_invoice_head.sl.count(),db.sm_invoice_head.area_id,db.sm_invoice_head.order_datetime, orderby=db.sm_invoice_head.level0_name, groupby=db.sm_invoice_head.area_id)
                  
                 invcChecklist=[]
                 invcCountList=[]
-                # for recordsInvcCount in recordsInvcCount:
-                #     invcCount=recordsInvcCount[db.sm_invoice_head.sl.count()]
-                #     invcDateTime=recordsInvcCount[db.sm_invoice_head.order_datetime]
-                #     invcCheck=str(recordsInvcCount[db.sm_invoice_head.area_id]) 
-                #     invcChecklist.append(invcCheck)
-                #     invcCountList.append(invcCount)
-
-                # recordsInvcAmount = qstInvcAmnt.select(( (db.sm_invoice.actual_tp)*((db.sm_invoice.quantity)+(db.sm_invoice.bonus_qty)-(db.sm_invoice.return_qty)-(db.sm_invoice.return_bonus_qty))).sum(),db.sm_invoice.area_id,db.sm_invoice.level1_name,db.sm_invoice.order_datetime, orderby=db.sm_invoice.level0_name, groupby=db.sm_invoice.area_id)
-                    
+               
                 invcAmntChecklist=[]
                 invcAmntList=[]
-                # for recordsInvcAmount in recordsInvcAmount:
-                #     invcAmnt=(recordsInvcAmount[(( (db.sm_invoice.actual_tp)*( (db.sm_invoice.quantity)+(db.sm_invoice.bonus_qty)-(db.sm_invoice.return_qty)-(db.sm_invoice.return_bonus_qty))) ).sum()])              
-                        
-                #     invcDateTime=recordsInvcAmount[db.sm_invoice.order_datetime]
-                #     invcAmountCheck=str(recordsInvcAmount[db.sm_invoice.area_id]) 
-                #     invcAmntChecklist.append(invcAmountCheck)
-                #     invcAmntList.append(invcAmnt)
-                   
+                
+            # return db._lastsql       
         return dict(OAmountChecklist=OAmountChecklist,OamountList=OamountList,invcChecklist=invcChecklist,invcCountList=invcCountList,invcAmntChecklist=invcAmntChecklist,invcAmntList=invcAmntList,OChecklist=OChecklist,OCountList=OCountList,vChecklist=vChecklist,vCountList=vCountList,from_dt=date_from,date_to=date_to,cid=cid,rep_id=rep_id,password=password,synccode=synccode,se_market_report=se_market_report,records_ov=records_ov,search_form=search_form)
     except:
         retStatus = 'FAILED<SYNCDATA>Please try later'
@@ -2573,7 +2579,7 @@ def sales_report_area_wise_url():
 def sales_report_area_wise():
 
     cid=session.cid
-    rep_id=session.rep_id
+    rep_id=session.s_id
     user_type=session.user_type
     password=session.password
     synccode=session.synccode
@@ -2598,6 +2604,7 @@ def sales_report_area_wise():
     date_to=now + datetime.timedelta(days = 1)
     
     repRow = db((db.sm_rep.cid == cid) & (db.sm_rep.rep_id == rep_id) & (db.sm_rep.password == password)  & (db.sm_rep.status == 'ACTIVE')).select(db.sm_rep.ALL, limitby=(0, 1))
+    # return db._lastsql
     if not repRow:
        retStatus = 'FAILED<SYNCDATA>Invalid Authorization'
        return retStatus
@@ -2613,7 +2620,7 @@ def sales_report_area_wise():
     report_string=""
     
     report_str=""
-    
+    # return user_type
     if (user_type=='REP'):
 
         repAreaRow = db((db.sm_rep_area.cid == cid) & (db.sm_rep_area.rep_id == rep_id)).select(db.sm_rep_area.area_id,orderby=db.sm_rep_area.area_id,groupby=db.sm_rep_area.area_id)
@@ -2635,13 +2642,13 @@ def sales_report_area_wise():
  
         condition=""        
         
-        condition="and sm_order.area_id  = '"+str(area_id) +"'"  
-        condition=condition+ "and sm_order.order_date  >= '"+str(session.from_dt) +"' and sm_order.order_date  <= '"+str(session.to_date) +"'"
+        # condition="and sm_order.rep_id  = '"+str(s_id) +"'"  
+        condition=condition+ "and sm_order.order_date  >= '"+str(session.from_dt) +"' and sm_order.order_date  < '"+str(session.to_date) +"'"
         records_ov=[]
-        sql_str="SELECT (sm_order.client_id) as client_id,(sm_order.client_name) as client_name,SUM((sm_order.price) * (sm_order.quantity)) as totalprice, sm_order.area_id as area_id, sm_order.vsl as vsl FROM sm_order WHERE sm_order.cid = '"+ str(cid)+"' and sm_order.rep_id ='"+ rep_id +"'" +condition+"  GROUP BY area_id,vsl ORDER BY `vsl` DESC  ;"
-        # return sql_str
+        sql_str="SELECT (sm_order.client_id) as client_id,(sm_order.client_name) as client_name,SUM((sm_order.price) * (sm_order.quantity)) as totalprice, sm_order.area_id as area_id, sm_order.vsl as vsl FROM sm_order WHERE sm_order.cid = '"+ str(cid)+"' and sm_order.rep_id ='"+ rep_id +"'" +condition+"  GROUP BY vsl ORDER BY `vsl` DESC  ;"
+        
         records_ov=db.executesql(sql_str,as_dict = True)
-
+        # return len(records_ov)
     if (user_type=='SUP'):
        
 
@@ -2718,6 +2725,7 @@ def sales_report_area_wise():
 
 
     order_date=''
+    # return db._lastsql
     return dict(date_to=date_to,order_count=order_count_show,invoice_count=invoice_count,cid=cid,rep_id=rep_id,password=password,synccode=synccode,records_ov=records_ov,area_id=area_id,area_name=area_name,order_date=order_date,s_id=s_id)
 
 

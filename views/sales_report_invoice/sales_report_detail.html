@@ -77,10 +77,10 @@ $(function() {
 <div class="table-responsive-sm">
   <table class="table mb-0" >
     <tbody>
-      <form action="{{=URL(c='sales_report_invoice',f='sales_report_detail_url',vars=dict(cid=cid,rep_id=rep_id,password=password,device_id=synccode,se_market_report=se_market_report))}}">
+      <form action="{{=URL(c='sales_report_invoice',f='sales_report_detail_url',vars=dict(cid=cid,rep_id=session.rep_id,password=session.password,device_id=synccode,se_market_report=se_market_report))}}">
         <input type="hidden" name="cid" value="{{=cid}}">
-        <input type="hidden" name="rep_id" id="rep_id" value="{{=rep_id}}">
-        <input type="hidden" name="password" id="password" value="{{=password}}">
+        <input type="hidden" name="rep_id" id="rep_id" value="{{=session.rep_id}}">
+        <input type="hidden" name="password" id="password" value="{{=session.password}}">
         <input type="hidden" name="synccode" id="synccode" value="{{=synccode}}">
         <input type="hidden" name="se_market_report" value="{{=se_market_report}}">
         <tr class="bg-light"><td style="border:0px solid #fff;padding: 0px 7px;font-weight: bold; " class="table-responsive-sm" colspan="3"> Order Date </td></tr>
@@ -142,7 +142,8 @@ $(function() {
         area_name=str(records_ov_dict["max(area_name)"])      
         area_id=str(records_ov_dict["area_id"])            
         s_id=str(records_ov_dict["rep_id"])   
-        s_name=str(records_ov_dict["max(rep_name)"])            
+        s_name=str(records_ov_dict["max(rep_name)"]) 
+        field1=str(records_ov_dict["field1"])            
 
 
         totalprice=0  
@@ -162,7 +163,8 @@ $(function() {
        }}   
        {{
           order_count=0
-          Ocheck=str(area_id) 
+          Ocheck=str(area_id) +'|'+str(s_id)
+          #=Ocheck
           try:
             if [s for s in OChecklist if Ocheck in s]:
               index_element = OChecklist.index(Ocheck)           
@@ -174,7 +176,7 @@ $(function() {
        }}    
       {{
         totalprice=0
-        Oacheck=str(area_id) 
+        Oacheck=str(area_id) +'|'+str(s_id)
         try:
           if [s for s in OAmountChecklist if Oacheck in s]:
             index_element = OAmountChecklist.index(Oacheck)           
@@ -185,7 +187,7 @@ $(function() {
       }} 
       {{
         invoice_count=0
-        invcCheck=str(area_id) 
+        invcCheck=str(area_id) +'|'+str(s_id)
         try:
           if [s for s in invcChecklist if invcCheck in s]:
             index_element = invcChecklist.index(invcCheck)           
@@ -197,7 +199,7 @@ $(function() {
       }}      
       {{
           invoice_totalprice=0
-          invcAmountCheck=str(area_id) 
+          invcAmountCheck=str(area_id) +'|'+str(s_id)
           try:
             if [s for s in invcAmntChecklist if invcAmountCheck in s]:
               index_element = invcAmntChecklist.index(invcAmountCheck)           
@@ -243,10 +245,14 @@ $(function() {
  
           {{=invoice_totalprice}}
         </td> -->
-        <td class="text-right"><a style="text-decoration: none;font-size: 20px"  href="{{=URL(c='sales_report_invoice',f='sales_report_area_wise_url', vars=dict(cid=cid,rep_id=rep_id,password=password,device_id=synccode,se_market_report=se_market_report,area_id=area_id,to_date=session.to_date,from_date=session.from_dt,invoice_count=invoice_count,s_id=s_id,s_name=s_name,area_name=area_name))}}" >
+        {{if field1=='ORDER':}}
+        <td class="text-right"><a style="text-decoration: none;font-size: 20px"  href="{{=URL(c='sales_report_invoice',f='sales_report_area_wise_url', vars=dict(cid=cid,rep_id=rep_id,password=password,device_id=synccode,se_market_report=se_market_report,area_id=area_id,to_date=session.to_date,from_date=session.from_dt,invoice_count=invoice_count,s_id=s_id))}}" >
           &raquo;
         </a>
         </td>
+        {{else:}}
+        <td></td>
+        {{pass}}
       </tr>
       {{pass}}
       <tr class="table-light">
